@@ -1,0 +1,91 @@
+// Генератор мега-кликера на 100 МБ
+const generateGame = () => {
+    const part1 = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>ULTRA CLICKER 100MB Edition</title>
+    <style>
+        body { background: #050505; color: #00ff00; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        #game-container { border: 3px solid #00ff00; padding: 40px; border-radius: 20px; box-shadow: 0 0 20px #00ff00; text-align: center; }
+        #score { font-size: 48px; text-shadow: 0 0 10px #00ff00; margin-bottom: 20px; }
+        button { background: transparent; border: 2px solid #00ff00; color: #00ff00; padding: 15px 30px; font-size: 20px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #00ff00; color: #000; box-shadow: 0 0 15px #00ff00; }
+        .upgrades { margin-top: 20px; max-height: 200px; overflow-y: auto; width: 300px; border-top: 1px solid #004400; }
+        .item { font-size: 12px; padding: 5px; border-bottom: 1px dashed #004400; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>ULTRA CLICKER v1.0</h1>
+        <div id="score">0</div>
+        <button id="clickBtn">КЛИКАТЬ!</button>
+        <div id="status">Загрузка данных...</div>
+        <div class="upgrades" id="upgradesList"></div>
+    </div>
+
+    <script>
+        let score = 0;
+        let perClick = 1;
+        // Наша гигантская база данных "фишек"
+        const megaData = `;
+
+    // Генерируем массив "фишек" и улучшений, чтобы забить 100 МБ
+    // Каждая фишка - это объект с уникальным описанием
+    const upgrades = [];
+    let currentSize = 0;
+    const targetSize = 100 * 1024 * 1024; // 100 МБ
+
+    console.log("Генерация 100 МБ кода, подождите...");
+
+    let i = 0;
+    while (currentSize < targetSize - 5000) { // Оставляем место под остальной код
+        const item = {
+            id: i,
+            name: `Улучшение №${i}`,
+            power: Math.floor(Math.random() * 100),
+            desc: "Это уникальное описание улучшения, которое добавляет веса нашему файлу и делает игру по-настоящему тяжелой. ".repeat(5)
+        };
+        const strItem = JSON.stringify(item) + ",";
+        upgrades.push(strItem);
+        currentSize += strItem.length;
+        i++;
+    }
+
+    const part2 = `;
+        const scoreEl = document.getElementById('score');
+        const listEl = document.getElementById('upgradesList');
+
+        document.getElementById('clickBtn').onclick = () => {
+            score += perClick;
+            scoreEl.innerText = Math.floor(score);
+            if(score % 10 === 0) renderUpgrade();
+        };
+
+        function renderUpgrade() {
+            const upg = megaData[Math.floor(Math.random() * megaData.length)];
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.innerText = \`Доступно: \${upg.name} (+\${upg.power} к клику)\`;
+            div.onclick = () => {
+                perClick += upg.power / 10;
+                div.style.color = 'gray';
+                div.onclick = null;
+            };
+            listEl.prepend(div);
+        }
+
+        document.getElementById('status').innerText = "База данных на " + megaData.length + " фишек загружена!";
+    </script>
+</body>
+</html>`;
+
+    const blob = new Blob([part1, "[", ...upgrades, "{}]", part2], { type: 'text/html' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'mega_clicker_100mb.html';
+    link.click();
+    console.log("Готово! Файл скачан.");
+};
+
+generateGame();
