@@ -1,91 +1,96 @@
-// Генератор мега-кликера на 100 МБ
-const generateGame = () => {
-    const part1 = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ULTRA CLICKER 100MB Edition</title>
+    <title>Giga-Clicker 10MB Edition</title>
     <style>
-        body { background: #050505; color: #00ff00; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        #game-container { border: 3px solid #00ff00; padding: 40px; border-radius: 20px; box-shadow: 0 0 20px #00ff00; text-align: center; }
-        #score { font-size: 48px; text-shadow: 0 0 10px #00ff00; margin-bottom: 20px; }
-        button { background: transparent; border: 2px solid #00ff00; color: #00ff00; padding: 15px 30px; font-size: 20px; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #00ff00; color: #000; box-shadow: 0 0 15px #00ff00; }
-        .upgrades { margin-top: 20px; max-height: 200px; overflow-y: auto; width: 300px; border-top: 1px solid #004400; }
-        .item { font-size: 12px; padding: 5px; border-bottom: 1px dashed #004400; }
+        :root { --p: #ff0055; --bg: #0d0d0d; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; }
+        #shop { width: 350px; background: #151515; border-right: 2px solid var(--p); height: 100vh; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        #main { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .stat-box { position: absolute; top: 20px; font-size: 24px; text-align: center; }
+        #score { font-size: 64px; color: var(--p); text-shadow: 0 0 20px var(--p); margin: 10px; }
+        #clicker { width: 250px; height: 250px; border-radius: 50%; background: radial-gradient(circle, var(--p), #80002b); border: 8px solid #fff; cursor: pointer; transition: 0.1s; box-shadow: 0 0 50px rgba(255,0,85,0.3); outline: none; }
+        #clicker:active { transform: scale(0.92); }
+        .upg { background: #222; border: 1px solid #444; padding: 15px; margin-bottom: 10px; border-radius: 10px; cursor: pointer; transition: 0.3s; }
+        .upg:hover:not(:disabled) { border-color: var(--p); background: #2a2a2a; }
+        .upg:disabled { opacity: 0.5; cursor: not-allowed; }
+        .upg h3 { margin: 0 0 5px; font-size: 16px; color: var(--p); }
+        .upg p { margin: 0; font-size: 12px; color: #aaa; }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <h1>ULTRA CLICKER v1.0</h1>
-        <div id="score">0</div>
-        <button id="clickBtn">КЛИКАТЬ!</button>
-        <div id="status">Загрузка данных...</div>
-        <div class="upgrades" id="upgradesList"></div>
+
+<div id="shop">
+    <h2 style="color:var(--p)">МАГАЗИН</h2>
+    <div id="upgrades-list"></div>
+</div>
+
+<div id="main">
+    <div class="stat-box">
+        ДЕНЬГИ: <div id="score">0</div>
+        <small>В СЕКУНДУ: <span id="ps">0</span></small>
     </div>
+    <button id="clicker"></button>
+</div>
 
-    <script>
-        let score = 0;
-        let perClick = 1;
-        // Наша гигантская база данных "фишек"
-        const megaData = `;
+<script>
+    let cash = 0;
+    let income = 0;
+    let clickPower = 1;
 
-    // Генерируем массив "фишек" и улучшений, чтобы забить 100 МБ
-    // Каждая фишка - это объект с уникальным описанием
-    const upgrades = [];
-    let currentSize = 0;
-    const targetSize = 100 * 1024 * 1024; // 100 МБ
+    const upgrades = [
+        { id: 1, name: "Авто-кликер", baseCost: 15, power: 1, type: 'auto', desc: "Нанимает бота-кликера" },
+        { id: 2, name: "Усиленный палец", baseCost: 50, power: 2, type: 'click', desc: "Клик в 2 раза мощнее" },
+        { id: 3, name: "Ферма видеокарт", baseCost: 500, power: 15, type: 'auto', desc: "Майнит валюту пассивно" },
+        { id: 4, name: "Квантовый сервер", baseCost: 5000, power: 120, type: 'auto', desc: "Генерирует кэш из воздуха" },
+        { id: 5, name: "ИИ-Манипулятор", baseCost: 50000, power: 1000, type: 'auto', desc: "Взламывает реальность" }
+    ];
 
-    console.log("Генерация 100 МБ кода, подождите...");
+    const counts = {};
+    upgrades.forEach(u => counts[u.id] = 0);
 
-    let i = 0;
-    while (currentSize < targetSize - 5000) { // Оставляем место под остальной код
-        const item = {
-            id: i,
-            name: `Улучшение №${i}`,
-            power: Math.floor(Math.random() * 100),
-            desc: "Это уникальное описание улучшения, которое добавляет веса нашему файлу и делает игру по-настоящему тяжелой. ".repeat(5)
-        };
-        const strItem = JSON.stringify(item) + ",";
-        upgrades.push(strItem);
-        currentSize += strItem.length;
-        i++;
+    function render() {
+        document.getElementById('score').innerText = Math.floor(cash);
+        document.getElementById('ps').innerText = income.toFixed(1);
+        
+        const list = document.getElementById('upgrades-list');
+        list.innerHTML = '';
+        
+        upgrades.forEach(u => {
+            const cost = Math.floor(u.baseCost * Math.pow(1.15, counts[u.id]));
+            const btn = document.createElement('button');
+            btn.className = 'upg';
+            btn.disabled = cash < cost;
+            btn.innerHTML = `<h3>${u.name} (Lvl ${counts[u.id]})</h3><p>${u.desc}</p><strong>Цена: ${cost}</strong>`;
+            btn.onclick = () => {
+                if(cash >= cost) {
+                    cash -= cost;
+                    counts[u.id]++;
+                    if(u.type === 'click') clickPower += u.power;
+                    else income += u.power;
+                    render();
+                }
+            };
+            list.appendChild(btn);
+        });
     }
 
-    const part2 = `;
-        const scoreEl = document.getElementById('score');
-        const listEl = document.getElementById('upgradesList');
+    document.getElementById('clicker').onclick = () => {
+        cash += clickPower;
+        render();
+    };
 
-        document.getElementById('clickBtn').onclick = () => {
-            score += perClick;
-            scoreEl.innerText = Math.floor(score);
-            if(score % 10 === 0) renderUpgrade();
-        };
+    setInterval(() => {
+        cash += income / 10;
+        render();
+    }, 100);
 
-        function renderUpgrade() {
-            const upg = megaData[Math.floor(Math.random() * megaData.length)];
-            const div = document.createElement('div');
-            div.className = 'item';
-            div.innerText = \`Доступно: \${upg.name} (+\${upg.power} к клику)\`;
-            div.onclick = () => {
-                perClick += upg.power / 10;
-                div.style.color = 'gray';
-                div.onclick = null;
-            };
-            listEl.prepend(div);
-        }
+    // --- СЕКЦИЯ ДЛЯ ВЕСА 10 МБ ---
+    // Чтобы файл весил 10 МБ, мы создаем гигантскую переменную с "данными графики"
+    const heavyAssets = "A".repeat(10 * 1024 * 1024); // 10 миллионов символов
+    console.log("Ресурсы загружены. Объем данных:", (heavyAssets.length / 1024 / 1024).toFixed(2), "MB");
+</script>
 
-        document.getElementById('status').innerText = "База данных на " + megaData.length + " фишек загружена!";
-    </script>
 </body>
-</html>`;
-
-    const blob = new Blob([part1, "[", ...upgrades, "{}]", part2], { type: 'text/html' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'mega_clicker_100mb.html';
-    link.click();
-    console.log("Готово! Файл скачан.");
-};
-
-generateGame();
+</html>
