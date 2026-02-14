@@ -2,137 +2,175 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>GitHub Global Clicker</title>
+    <title>Football Global Clicker</title>
+    <!-- Firebase SDK (библиотеки) -->
+    <script src="https://www.gstatic.com"></script>
+    <script src="https://www.gstatic.com"></script>
     <style>
-        :root { --main: #2ea44f; --bg: #0d1117; --line: #30363d; }
-        body { background: var(--bg); color: #c9d1d9; font-family: -apple-system, sans-serif; display: flex; height: 100vh; margin: 0; }
-        #leaderboard { width: 300px; background: #161b22; border-left: 1px solid var(--line); padding: 20px; overflow-y: auto; }
-        #game { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-        .score-val { font-size: 60px; color: var(--main); font-weight: bold; text-shadow: 0 0 20px rgba(46,164,79,0.3); }
-        #btn { width: 220px; height: 220px; border-radius: 50%; border: none; background: var(--main); color: white; font-size: 80px; cursor: pointer; transition: 0.1s; box-shadow: 0 10px 0 #238636; margin: 20px; }
-        #btn:active { transform: translateY(5px); box-shadow: 0 5px 0 #238636; }
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        input { background: #0d1117; border: 1px solid var(--line); color: #fff; padding: 10px; border-radius: 5px; margin-bottom: 10px; width: 200px; }
-        .rank-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
-        .upgrades { position: absolute; left: 20px; top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .upg-btn { background: #21262d; border: 1px solid var(--line); color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; width: 180px; }
+        :root { --main: #00ff88; --bg: #0d1117; --card: #161b22; }
+        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; margin: 0; height: 100vh; overflow: hidden; }
+        
+        #shop { width: 300px; background: var(--card); border-right: 1px solid #30363d; padding: 20px; overflow-y: auto; }
+        #main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #leaderboard { width: 280px; background: var(--card); border-left: 1px solid #30363d; padding: 20px; }
+
+        .upg-item { background: #21262d; border: 1px solid #30363d; padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; width: 100%; text-align: left; color: white; }
+        .upg-item:hover:not(:disabled) { border-color: var(--main); }
+        .upg-item:disabled { opacity: 0.5; cursor: not-allowed; }
+        .upg-item b { color: var(--main); font-size: 16px; }
+
+        #ball { width: 200px; height: 200px; border-radius: 50%; background: #fff; font-size: 80px; cursor: pointer; border: none; box-shadow: 0 0 40px rgba(255,255,255,0.1); transition: 0.1s; }
+        #ball:active { transform: scale(0.9); }
+
+        .rank { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #30363d; }
+        
+        #login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .modal { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid var(--main); text-align: center; }
+        input { padding: 10px; border-radius: 5px; border: 1px solid #30363d; background: #0d1117; color: white; margin: 10px 0; }
     </style>
 </head>
 <body>
 
-<!-- Модалка выбора имени -->
-<div id="nameModal" class="modal">
-    <div style="text-align: center;">
-        <h2>Введите ваш ник:</h2>
-        <input type="text" id="playerName" placeholder="Player123" maxlength="12"><br>
-        <button onclick="startGame()" style="background: var(--main); border: none; color: #fff; padding: 10px 30px; border-radius: 5px; cursor: pointer;">ИГРАТЬ</button>
+<div id="login-overlay">
+    <div class="modal">
+        <h2>Твой ник для ТОПа:</h2>
+        <input type="text" id="nick" maxlength="12"><br>
+        <button onclick="saveNick()" style="background:var(--main); border:none; padding:10px 25px; border-radius:5px; cursor:pointer; font-weight:bold;">ВОЙТИ В ИГРУ</button>
     </div>
 </div>
 
-<div class="upgrades" id="upgList"></div>
+<div id="shop">
+    <h3>УЛУЧШЕНИЯ</h3>
+    <div id="shop-content"></div>
+</div>
 
-<div id="game">
-    <div id="playerLabel" style="color: #8b949e;">Игрок: ...</div>
-    <div class="score-val" id="moneyDisplay">0</div>
-    <button id="btn">👆</button>
-    <div style="color: #8b949e;">Клик: +<span id="pwrDisplay">1</span> | Авто: <span id="autoDisplay">0</span>/с</div>
+<div id="main">
+    <div id="display-name" style="color:#8b949e">...</div>
+    <h1 id="balance" style="font-size:60px; margin:10px; color:var(--main)">0</h1>
+    <button id="ball">⚽</button>
+    <div style="margin-top:20px;">Клик: +<span id="p-click">1</span> | Авто: +<span id="p-auto">0</span>/с</div>
 </div>
 
 <div id="leaderboard">
-    <h3>🏆 ТОП ИГРОКОВ</h3>
-    <div id="leaderList">Загрузка...</div>
+    <h3>🏆 ТОП МИРА</h3>
+    <div id="top-list">Загрузка...</div>
 </div>
 
 <script>
-    // ДОБИВАЕМ ВЕС ДО 10 МБ (GitHub Pages считает размер файла)
-    const weight = "💠".repeat(5 * 1024 * 1024);
+    // 1. Инициализация твоим конфигом
+    const firebaseConfig = {
+        apiKey: "AIzaSyAMDY3BcLQS-HhbolBb1DwyFpYw24-EVhM",
+        databaseURL: "https://football-3b1a1-default-rtdb.firebaseio.com",
+        projectId: "football-3b1a1",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    let state = JSON.parse(localStorage.getItem('gh_clicker_v2')) || {
-        name: '',
+    // 2. Данные игры (подгружаем сохранения)
+    let state = JSON.parse(localStorage.getItem('fb_clicker')) || {
+        name: "",
         money: 0,
-        pwr: 1,
-        auto: 0,
-        costs: [15, 100]
+        lvls: [0, 0, 0]
     };
 
-    function startGame() {
-        const input = document.getElementById('playerName').value.trim();
-        state.name = input || "Аноним";
-        document.getElementById('nameModal').style.display = 'none';
-        document.getElementById('playerLabel').innerText = "Игрок: " + state.name;
-        save();
-        updateLeaderboard();
-    }
-
-    if (state.name) document.getElementById('nameModal').style.display = 'none';
-    document.getElementById('playerLabel').innerText = "Игрок: " + (state.name || "...");
-
-    function save() {
-        localStorage.setItem('gh_clicker_v2', JSON.stringify(state));
-    }
-
-    const upgs = [
-        { name: "Супер Кликер", pwr: 2, type: 'click' },
-        { name: "Майнинг Ферма", pwr: 10, type: 'auto' }
+    const upgrades = [
+        { name: "Бутсы", base: 15, power: 1, type: 'click' },
+        { name: "Тренер", base: 100, power: 5, type: 'auto' },
+        { name: "Стадион", base: 1000, power: 50, type: 'auto' }
     ];
 
-    function buy(id) {
-        let cost = state.costs[id];
-        if (state.money >= cost) {
-            state.money -= cost;
-            if (upgs[id].type === 'click') state.pwr += upgs[id].pwr;
-            else state.auto += upgs[id].pwr;
-            state.costs[id] = Math.floor(cost * 1.6);
+    function saveNick() {
+        const n = document.getElementById('nick').value.trim();
+        if(n) {
+            state.name = n;
+            document.getElementById('login-overlay').style.display = 'none';
             save();
-            render();
+            updateUI();
+            pushToCloud();
         }
     }
 
-    function render() {
-        document.getElementById('moneyDisplay').innerText = Math.floor(state.money);
-        document.getElementById('pwrDisplay').innerText = state.pwr;
-        document.getElementById('autoDisplay').innerText = state.auto;
+    if(state.name) document.getElementById('login-overlay').style.display = 'none';
+
+    function save() {
+        localStorage.setItem('fb_clicker', JSON.stringify(state));
+    }
+
+    function updateUI() {
+        document.getElementById('balance').innerText = Math.floor(state.money);
+        document.getElementById('display-name').innerText = "Игрок: " + state.name;
+
+        let curClick = 1;
+        let curAuto = 0;
         
-        const list = document.getElementById('upgList');
-        list.innerHTML = '';
-        upgs.forEach((u, i) => {
-            list.innerHTML += `<button class="upg-btn" onclick="buy(${i})" ${state.money < state.costs[i] ? 'disabled' : ''}>
-                ${u.name}<br>Цена: ${state.costs[i]}
-            </button>`;
+        const shop = document.getElementById('shop-content');
+        shop.innerHTML = "";
+
+        upgrades.forEach((u, i) => {
+            let cost = Math.floor(u.base * Math.pow(1.6, state.lvls[i]));
+            if(u.type === 'click') curClick += state.lvls[i] * u.power;
+            else curAuto += state.lvls[i] * u.power;
+
+            let b = document.createElement('button');
+            b.className = "upg-item";
+            b.disabled = state.money < cost;
+            b.innerHTML = `<b>${u.name}</b> (Lvl ${state.lvls[i]})<br>Цена: ${cost} ⚽`;
+            b.onclick = () => {
+                if(state.money >= cost) {
+                    state.money -= cost;
+                    state.lvls[i]++;
+                    save();
+                    updateUI();
+                }
+            };
+            shop.appendChild(b);
+        });
+
+        document.getElementById('p-click').innerText = curClick;
+        document.getElementById('p-auto').innerText = curAuto;
+        return { curClick, curAuto };
+    }
+
+    document.getElementById('ball').onclick = () => {
+        const { curClick } = updateUI();
+        state.money += curClick;
+        updateUI();
+    };
+
+    // 3. Работа с Глобальным Топом
+    function pushToCloud() {
+        if(!state.name) return;
+        db.ref('players/' + state.name).set({
+            score: Math.floor(state.money),
+            time: Date.now()
         });
     }
 
-    document.getElementById('btn').onclick = () => {
-        state.money += state.pwr;
-        render();
-        save();
-    };
-
-    // Эмуляция таблицы лидеров (для GitHub Pages без бэкенда)
-    // В реальном проекте тут должен быть Fetch к API (Firebase или MongoDB)
-    function updateLeaderboard() {
-        const mockTops = [
-            {name: "Admin", score: 999999},
-            {name: "GigaChad", score: 500000},
-            {name: state.name || "Ты", score: Math.floor(state.money)}
-        ].sort((a, b) => b.score - a.score);
-
-        const list = document.getElementById('leaderList');
-        list.innerHTML = mockTops.map((t, i) => `
-            <div class="rank-item">
-                <span>${i+1}. ${t.name}</span>
-                <span style="color:var(--main)">${t.score}</span>
+    db.ref('players').orderByChild('score').limitToLast(10).on('value', (snap) => {
+        const val = snap.val();
+        let arr = [];
+        for(let id in val) arr.push({name: id, score: val[id].score});
+        arr.sort((a,b) => b.score - a.score);
+        
+        document.getElementById('top-list').innerHTML = arr.map((p, i) => `
+            <div class="rank">
+                <span>${i+1}. ${p.name}</span>
+                <b style="color:var(--main)">${p.score}</b>
             </div>
         `).join('');
-    }
+    });
 
+    // Циклы игры
     setInterval(() => {
-        state.money += state.auto / 10;
-        render();
+        const { curAuto } = updateUI();
+        if(curAuto > 0) {
+            state.money += curAuto / 10;
+            updateUI();
+        }
     }, 100);
 
-    setInterval(updateLeaderboard, 5000); // Обновление топа каждые 5 сек
-    render();
+    setInterval(pushToCloud, 10000); // Глобальное сохранение раз в 10 сек
+    updateUI();
 </script>
 </body>
 </html>
